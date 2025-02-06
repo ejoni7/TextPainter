@@ -1,3 +1,4 @@
+import json
 from math import ceil
 from tkinter import *
 import random
@@ -10,6 +11,17 @@ main=main_color=root=fav=list_box=canvas=filled=manual_fill=entry=curser_index=s
 obj=win=fg_color=bg_color=selected_label=main_hex_label=exhibit_label=exhibit_label_fg=exhibit_label_bg=None
 members=[[0,0,[],[]],]
 labels=[]
+file_path=r'C:\Users\HP\Desktop\members.txt'
+# ========== filing members functions =========
+def rewrite_members():
+    with open(file_path,'w') as file:
+        json.dump(members,file)
+
+def refresh_members():
+    global members
+    with open(file_path,'r') as file:
+        members=json.load(file)
+    
 #====== clases ======
 # -------- Field -----------
 class Field:
@@ -121,12 +133,15 @@ class CustomButton:
             else:
                 x.append(col)
                 list_box.insert(END,col)
+                rewrite_members()
                 color_colection()
 
         # ======= remove favorite color ========
         elif self.duty=='remove_fav':
             if curser_index := list_box.curselection():
                 list_box.delete(curser_index)
+                del members[auth_index][2][curser_index[0]]
+                rewrite_members()
                 color_colection()
 
         # ====== manual ========
@@ -195,13 +210,15 @@ def register_form():
 def register_():
     user=username.entry.get()
     passcode=password.entry.get()
+    refresh_members()
     users=[ member[0] for member in members] 
     if user in users:
         messagebox.showerror('ALERT','you registered before')
     elif len(user)<5 or len(passcode)<5:
         messagebox.showerror('ALERT','enter more charecters')
     else:
-        members.append([user,passcode,[],()])
+        members.append([user,passcode,[],[]])
+        rewrite_members()
         login_form()
     clear()
 
@@ -219,7 +236,8 @@ def login():
     # ---- get entries ------
     user=username.entry.get()
     passcode=password.entry.get()
-    
+    refresh_members()
+
     # ----- authenticate ------
     found=False
     for i,member in enumerate(members):
@@ -459,7 +477,9 @@ def save_labels():
     for label in labels:
         labels_info.append({"text":label.cget('text'),"x":label.winfo_x(),'y':label.winfo_y(),
         'fg':label.cget('fg'),'bg':label.cget('bg'),'font':label.cget('font')})
-    members[auth_index][3]=(labels_info)
+    members[auth_index][3]=labels_info
+    rewrite_members()
+    
     root.destroy()
     
 # ------ set destroy --------
