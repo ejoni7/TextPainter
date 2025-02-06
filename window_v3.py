@@ -8,7 +8,7 @@ from tkinter import messagebox
 auth_index=top_level_destroyed=lbl_index=0
 main=main_color=root=fav=list_box=canvas=filled=manual_fill=entry=curser_index=show_canvas=None
 obj=win=fg_color=bg_color=selected_label=main_hex_label=exhibit_label=exhibit_label_fg=exhibit_label_bg=None
-members=[[0,0,[]],]
+members=[[0,0,[],[]],]
 labels=[]
 #====== clases ======
 # -------- Field -----------
@@ -201,7 +201,7 @@ def register_():
     elif len(user)<5 or len(passcode)<5:
         messagebox.showerror('ALERT','enter more charecters')
     else:
-        members.append([user,passcode,[]])
+        members.append([user,passcode,[],()])
         login_form()
     clear()
 
@@ -214,7 +214,7 @@ def login_form():
     btn_register.config(text='login',command=login)
 
 def login():
-    global auth_index,list_box
+    global auth_index,list_box,labels,selected_label,main_hex_label
 
     # ---- get entries ------
     user=username.entry.get()
@@ -230,15 +230,36 @@ def login():
            fav.deiconify()
            main.withdraw()
            auth_index=i
-           for i in members[auth_index][2]:
-               list_box.insert(0,i)
+           for col in members[auth_index][2]:
+               list_box.insert(0,col)
            color_colection()
            list_box.bind('<<ListboxSelect>>',show_color)
            found=True
-           
+
+           # ----- recreate user labels --------
+           if (user_created :=members[auth_index][3]):
+               for n,label in enumerate(user_created):
+                    text=label['text']
+                    if n==0:
+                       main_hex_label.config(text=text,fg=text)
+                       root.config(bg=text)
+                    else:
+                        bg_=label['bg']
+                        fg_=label['fg']
+                        font_=label['font']
+                        place__x=label['x']
+                        place__y=label['y']
+                        if n==1:
+                            selected_label.config(text=text,bg=bg_,fg=fg_,font=font_)
+                            selected_label.place(x=place__x,y=place__y)
+                        else:
+                            lbl=Label(root,text=text,bg=bg_,fg=fg_,font=font_)
+                            lbl.place(x=place__x,y=place__y)
+                            labels.append(lbl)
+               exhibit()
+
     if not found:
         messagebox.showerror('ALERT','username or password is incorect')       
-
 
 
 # ===== root ======
@@ -246,6 +267,7 @@ def login():
 def high():
     root.update()
     return root.winfo_height()-30 
+  
 
 def create_root():
     global main_color,root,labels,selected_label,main_hex_label
@@ -258,12 +280,11 @@ def create_root():
     root.config(bg=main_color)
     root.title('screen')
     
-    # ---- create hex label & hello! ------
-    main_hex_label=Label(root,text=root.cget('bg'),fg=root.cget('bg'),font='arial 20 bold')
-    main_hex_label.place(x=0,y=high())
+    # ------ root labels ------
     label=Label(root,text='hello',font='arial 20 bold',bg='black',fg='red')
     label.place(x=200,y=150)
-    
+    main_hex_label=Label(root,text=root.cget('bg'),fg=root.cget('bg'),font='arial 20 bold')
+    main_hex_label.place(x=0,y=high())
     labels=[label,]
     selected_label=label
     configer(CustomButton(root,'+',120,root.winfo_height()-30,(0,2),4,'red','add_fav'),12)
@@ -414,7 +435,7 @@ def show_color(event):
     col=list_box.get(curser_index)
     canvas.itemconfig(filled,fill=col)
     color_percent(col)
-    
+  
 # ----- create fav,root,win windows again --------
 def destroyed(event):
     global top_level_destroyed,main
@@ -430,12 +451,23 @@ def destroyed(event):
             clear()
             top_level_destroyed=0
             destroy_set()
-
+            
+# ------ save labels --------
+def save_labels():
+    root.update()
+    labels_info=[{"text":main_hex_label.cget('text')}]
+    for label in labels:
+        labels_info.append({"text":label.cget('text'),"x":label.winfo_x(),'y':label.winfo_y(),
+        'fg':label.cget('fg'),'bg':label.cget('bg'),'font':label.cget('font')})
+    members[auth_index][3]=(labels_info)
+    root.destroy()
+    
 # ------ set destroy --------
 def destroy_set():
     fav.bind('<Destroy>',destroyed)
     root.bind('<Destroy>',destroyed)
     win.bind('<Destroy>',destroyed) 
+    root.protocol('WM_DELETE_WINDOW',save_labels)
 
 list_box.bind('<<ListboxSelect>>',show_color)
 destroy_set()             
