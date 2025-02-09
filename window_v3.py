@@ -1,24 +1,33 @@
 import json
 from math import ceil
+import os
 from tkinter import *
 import random
 from tkinter import font
 from tkinter import messagebox
+from PIL import ImageGrab
 
 # ===== GLOBAL Variables =======
 auth_index=top_level_destroyed=lbl_index=0
-main=main_color=root=fav=list_box=canvas=filled=manual_fill=entry=curser_index=show_canvas=None
+main=main_color=root=fav=list_box=canvas=filled=manual_fill=entry=curser_index=show_canvas=root_plus=screen_btn=None
 obj=win=fg_color=bg_color=selected_label=main_hex_label=exhibit_label=exhibit_label_fg=exhibit_label_bg=None
 members=[[0,0,[],[]],]
 labels=[]
-file_path=r'C:\Users\HP\Desktop\members.txt'
+path=os.path.dirname(os.path.abspath(__file__))
+
 # ========== filing members functions =========
+file_path=os.path.join(path,r'members\members.txt')
 def rewrite_members():
     with open(file_path,'w') as file:
         json.dump(members,file)
 
+if not os.path.exists(file_path):
+    os.mkdir(os.path.join(path,r'members'))
+    rewrite_members()
+
 def refresh_members():
     global members
+    
     with open(file_path,'r') as file:
         members=json.load(file)
     
@@ -49,31 +58,37 @@ class CustomButton:
         global selected_label, lbl_index,curser_index,entry,labels,main_color,main_hex_label,manual_fill,canvas
 
         # ======= magnifier =========
-        if self.duty=='magnifier':
+        if self.duty == 'magnifier':
             wiget_font=font.Font(font=selected_label.cget('font'))
             font_size=wiget_font.cget('size')
+
             if self.magic[0]: 
                 font_size +=2
+
             elif self.magic[1]: 
                 font_size -=2
             selected_label.config(font=f'arial {font_size} bold')
         
         # ======= change color ======
-        elif self.duty=='change_color':
+        elif self.duty == 'change_color':
             color='#'+''.join(random.choices('0123456789abcdef',k=6))
-            if self.magic[0]==2:
+
+            if self.magic[0] == 2:
                 selected_label.config(bg=main_color)
+
             elif self.magic[0]:
                 if self.magic[1]:
                     selected_label.config(bg=color)
                 else:
                     selected_label.config(fg=color)
+
             else:
                 main_color = color 
                 root.config(bg=color)
                   
         # ======= transport ============ 
-        elif self.duty=='transpose': 
+        elif self.duty == 'transpose':
+
             if self.magic[0]:
                 x_place=selected_label.winfo_x()
                 x_place -= self.magic[0]*15
@@ -85,51 +100,61 @@ class CustomButton:
                 selected_label.place(y=y_place)
 
         # ======== submit =========
-        elif self.duty=='submit':
+        elif self.duty == 'submit':
             entered_text=entry.get()
             label_=Label(root,text=entered_text,font='arial 20 bold',bg='yellow',fg='blue')
             label_.pack()
             labels.append(label_)
             entry.delete(0,END)
         # ======= sweatch ========
-        elif self.duty=='sweatch':
+        elif self.duty == 'sweatch':
             quantity =len(labels)
+
             if quantity > lbl_index +1:
                 lbl_index=(lbl_index+1)%quantity
+
             elif quantity == lbl_index+1:
                 lbl_index=0
             selected_label=labels[lbl_index]
         
         # ====== remove ========
-        elif self.duty=='remove':
+        elif self.duty == 'remove':
             labels.remove(selected_label)
             selected_label.destroy()
             lbl_index -=1
+
             try:
                 selected_label=labels[lbl_index] 
+
             except:
                 selected_label=labels[0]
 
         # ======== update ======== 
-        elif self.duty=='update':
+        elif self.duty == 'update':
             entered_text=entry.get()
             selected_label.config(text=entered_text)
 
         # ======= add fav =======
-        elif self.duty=='add_fav':
+        elif self.duty == 'add_fav':
             rewatch_colors()
-            if self.magic[1]==0:
+
+            if self.magic[1] == 0:
                 col=fg_color
-            elif self.magic[1]==1:
+
+            elif self.magic[1] == 1:
                 col=bg_color
-            elif self.magic[1]==2:
+
+            elif self.magic[1] == 2:
                 col=root.cget('bg')
-            elif self.magic[1]== 3:
+
+            elif self.magic[1] ==  3:
                 ent=obj.entry.get().lower()
-                if ent =="#"+''.join(list(filter(lambda x: x in '0123456789abcdef',ent ))) and len(ent)==7:
+                if ent  == "#"+''.join(list(filter(lambda x: x in '0123456789abcdef',ent ))) and len(ent) == 7:
                     col=ent
+
             if col in (x := members[auth_index][2]):
                 pass
+
             else:
                 x.append(col)
                 list_box.insert(END,col)
@@ -137,7 +162,8 @@ class CustomButton:
                 color_colection()
 
         # ======= remove favorite color ========
-        elif self.duty=='remove_fav':
+        elif self.duty == 'remove_fav':
+
             if curser_index := list_box.curselection():
                 list_box.delete(curser_index)
                 del members[auth_index][2][curser_index[0]]
@@ -145,29 +171,55 @@ class CustomButton:
                 color_colection()
 
         # ====== manual ========
-        elif self.duty=='manual':   
+        elif self.duty == 'manual': 
+
             ent=obj.entry.get().lower()
-            if ent =="#"+''.join(list(filter(lambda x: x in '0123456789abcdef',ent ))) and len(ent)==7:
-                if self.magic[0]==0:
+            if ent  == "#"+''.join(list(filter(lambda x: x in '0123456789abcdef',ent ))) and len(ent) == 7:
+
+                if self.magic[0] == 0:
                     canvas.itemconfig(manual_fill,fill=ent)
-                elif self.magic[0]==1:
+
+                elif self.magic[0] == 1:
                     selected_label.config(fg=ent)
-                elif self.magic[0]==2:
+
+                elif self.magic[0] == 2:
                     selected_label.config(bg=ent)
-                elif self.magic[0]==3:
+
+                elif self.magic[0] == 3:
                     root.config(bg=ent)
 
         # ======== use favorite colors =======
-        elif self.duty =='fav_as':
+        elif self.duty  == 'fav_as':
+
             if curser_index := list_box.curselection():
                 col=list_box.get(curser_index)
-                if self.magic[0]==1:
+
+                if self.magic[0] == 1:
                     selected_label.config(fg=col)
-                elif self.magic[0]==2:
+
+                elif self.magic[0] == 2:
                     selected_label.config(bg=col)
-                elif self.magic[0]==3:
+
+                elif self.magic[0] == 3:
                     root.config(bg=col)
-                  
+        
+        # ========== get screan_shot =========
+        elif self.duty == 'get_screan_shot':
+            root.update()
+            x_=root.winfo_x()+10
+            y_=root.winfo_y()+33
+            wid_=root.winfo_width()
+            height_=root.winfo_height()
+            name=''.join(random.choices('0123456789',k=6))
+            saving_path=os.path.join(path,r'screen_shots',name+'.png')
+
+            if not os.path.exists((direct :=os.path.join(path,r'screen_shots'))):
+                os.makedirs(direct)
+
+            screanshot=ImageGrab.grab(bbox=(x_,y_,x_+wid_-5,y_+height_-33))
+            screanshot.save(saving_path)
+            messagebox.showinfo('screenshot','your screenshot saved at : \n'+saving_path)
+                 
         exhibit()
 
 
@@ -195,13 +247,15 @@ lbl.place(x=10,y=y_place)
 # ---- functions ------
 def clear():
     global username,password
+
     username.entry.delete(0,END)
     password.entry.delete(0,END)
     username.entry.focus_set()
 
 def register_form():
-    clear()
     global lbl,btn_login,btn_register
+
+    clear()
     main.title('register')
     lbl.config(text='you have an account')
     btn_login.config(text='login',command=login_form)
@@ -212,10 +266,13 @@ def register_():
     passcode=password.entry.get()
     refresh_members()
     users=[ member[0] for member in members] 
+
     if user in users:
         messagebox.showerror('ALERT','you registered before')
+
     elif len(user)<5 or len(passcode)<5:
         messagebox.showerror('ALERT','enter more charecters')
+
     else:
         members.append([user,passcode,[],[]])
         rewrite_members()
@@ -223,8 +280,8 @@ def register_():
     clear()
 
 def login_form():
-    clear()
     global username,password,lbl,btn_login,btn_register
+
     main.title('login')
     lbl.config(text='you dont have an account?')
     btn_login.config(text='register',command=register_form)
@@ -241,35 +298,42 @@ def login():
     # ----- authenticate ------
     found=False
     for i,member in enumerate(members):
-       if user==member[0] and passcode==member[1]:
+       if user == member[0] and passcode == member[1]:
            win.deiconify()
            root.deiconify()
            fav.title(f'{user} - favorite colors')
            fav.deiconify()
            main.withdraw()
            auth_index=i
+
            for col in members[auth_index][2]:
                list_box.insert(0,col)
+
            color_colection()
            list_box.bind('<<ListboxSelect>>',show_color)
            found=True
 
            # ----- recreate user labels --------
            if (user_created :=members[auth_index][3]):
+
                for n,label in enumerate(user_created):
                     text=label['text']
-                    if n==0:
+
+                    if n == 0:
                        main_hex_label.config(text=text,fg=text)
                        root.config(bg=text)
+
                     else:
                         bg_=label['bg']
                         fg_=label['fg']
                         font_=label['font']
                         place__x=label['x']
                         place__y=label['y']
-                        if n==1:
+
+                        if n == 1:
                             selected_label.config(text=text,bg=bg_,fg=fg_,font=font_)
                             selected_label.place(x=place__x,y=place__y)
+
                         else:
                             lbl=Label(root,text=text,bg=bg_,fg=fg_,font=font_)
                             lbl.place(x=place__x,y=place__y)
@@ -288,7 +352,7 @@ def high():
   
 
 def create_root():
-    global main_color,root,labels,selected_label,main_hex_label
+    global main_color,root,labels,selected_label,main_hex_label,root_plus,screen_btn
     
     # ----- create root -------
     main_color='#'+''.join(random.choices('0123456789abcdef',k=6))
@@ -305,11 +369,15 @@ def create_root():
     main_hex_label.place(x=0,y=high())
     labels=[label,]
     selected_label=label
-    configer(CustomButton(root,'+',120,root.winfo_height()-30,(0,2),4,'red','add_fav'),12)
-    
+    root_plus=CustomButton(root,'+',120,root.winfo_height()-30,(0,2),4,'red','add_fav')
+    screen_btn=CustomButton(root,'screen',root.winfo_width()-70,high(),(0,0),6,'gray','get_screan_shot')
+    configer(root_plus,12)
+    configer(screen_btn,12)
+     
 # ---- rewatch colors ----- 
 def rewatch_colors():
     global fg_color,bg_color
+
     fg_color=selected_label.cget("fg")
     bg_color=selected_label.cget('bg') 
 
@@ -318,8 +386,10 @@ create_root()
 # ===== fav =======
 def color_colection():
     size=list_box.size()
+
     for i in range(size):
         show_canvas.create_rectangle((i%7)*30,(i//7)*30,((i%7)+1)*30,((i//7)+1)*30,fill=list_box.get(i))
+
     for i in range(size,43,1):
         show_canvas.create_rectangle((i%7)*30,(i//7)*30,((i%7)+1)*30,((i//7)+1)*30,fill='white')
 
@@ -364,12 +434,13 @@ def create_fav():
     configer(CustomButton(fav,'as_main',190,50,(3,0),6,'#3b3b3b','manual'),16)
     configer(CustomButton(fav,'show',280,50,(0,0),6,'#3b3b3b','manual'),16)
     configer(CustomButton(fav,'+',330,18,(0,3),4,'red','add_fav'),8)
+
 create_fav()
 
 #====== create win =========
 
 def exhibit():
-    global exhibit_label,exhibit_label_bg,exhibit_label_fg,fg_color,bg_color
+    global exhibit_label,exhibit_label_bg,exhibit_label_fg,fg_color,bg_color,root_plus,screen_btn
     
     rewatch_colors()
     main_bg=root.cget('bg')
@@ -379,9 +450,12 @@ def exhibit():
     exhibit_label_bg.config(text=bg_color,fg=bg_color)
     exhibit_label.config(text=selected_label.cget('text'))
 
-    # ------ main hex lable --------
+    # ------ root parameters update --------
     main_hex_label.config(text=main_bg,fg=main_bg)
     main_hex_label.place(x=0,y=high())
+    
+    root_plus.btn.place(x=120,y=high())
+    screen_btn.btn.place(x=root.winfo_width()-70,y=high())
 
 def create_win():
     global win,entry,exhibit_label,exhibit_label_bg,exhibit_label_fg
@@ -449,6 +523,7 @@ def color_percent(color):
 # ------ fill show and percent regtangle with selected color -------
 def show_color(event):
     global show_canvas
+
     curser_index=list_box.curselection()
     col=list_box.get(curser_index)
     canvas.itemconfig(filled,fill=col)
@@ -457,7 +532,8 @@ def show_color(event):
 # ----- create fav,root,win windows again --------
 def destroyed(event):
     global top_level_destroyed,main
-    if event.widget== fav or event.widget==win or event.widget== root:
+
+    if event.widget ==  fav or event.widget == win or event.widget ==  root:
         if top_level_destroyed < 2 :
             top_level_destroyed +=1
             
