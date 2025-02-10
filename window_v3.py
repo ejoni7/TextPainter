@@ -9,7 +9,7 @@ from PIL import ImageGrab
 
 # ===== GLOBAL Variables =======
 auth_index=top_level_destroyed=lbl_index=0
-main=main_color=root=fav=list_box=canvas=filled=manual_fill=entry=curser_index=show_canvas=root_plus=screen_btn=None
+main=main_color=root=fav=list_box=login_user=canvas=filled=manual_fill=entry=curser_index=show_canvas=root_plus=screen_btn=None
 obj=win=fg_color=bg_color=selected_label=main_hex_label=exhibit_label=exhibit_label_fg=exhibit_label_bg=None
 members=[[0,0,[],[]],]
 labels=[]
@@ -165,6 +165,7 @@ class CustomButton:
         elif self.duty == 'remove_fav':
 
             if curser_index := list_box.curselection():
+                
                 list_box.delete(curser_index)
                 del members[auth_index][2][curser_index[0]]
                 rewrite_members()
@@ -210,18 +211,37 @@ class CustomButton:
             y_=root.winfo_y()+33
             wid_=root.winfo_width()
             height_=root.winfo_height()
-            name=''.join(random.choices('0123456789',k=6))
-            saving_path=os.path.join(path,r'screen_shots',name+'.png')
 
-            if not os.path.exists((direct :=os.path.join(path,r'screen_shots'))):
+            if not os.path.exists((direct :=os.path.join(path,login_user))):
                 os.makedirs(direct)
+            
+            def get_shot(format):
 
-            screanshot=ImageGrab.grab(bbox=(x_,y_,x_+wid_-5,y_+height_-33))
-            screanshot.save(saving_path)
-            messagebox.showinfo('screenshot','your screenshot saved at : \n'+saving_path)
-                 
+                if not os.path.exists((format_file :=os.path.join(direct,format))):
+                    os.makedirs(format_file)
+
+                exist_images=os.listdir(format_file)
+
+                _ = 1
+                while f'{_}.{format}' in exist_images:
+                    _ += 1
+                
+                saving_path=os.path.join(format_file ,f'{_}.{format}')
+                screenshot=ImageGrab.grab(bbox=(x_,y_,x_+wid_-5,y_+height_-33))
+
+                return (saving_path,screenshot)
+
+            if self.magic[0] == 0:
+                path_,img=get_shot('jpg')
+                
+            elif self.magic[0] == 1:
+                path_,img=get_shot('pdf')
+                img=img.convert('CMYK')
+
+            img.save(path_)
+            messagebox.showinfo('screenshot','your screenshot saved at : \n'+path_)
+                  
         exhibit()
-
 
 # ===== main ========
 main=Tk()
@@ -288,20 +308,21 @@ def login_form():
     btn_register.config(text='login',command=login)
 
 def login():
-    global auth_index,list_box,labels,selected_label,main_hex_label
+    global auth_index,list_box,labels,selected_label,main_hex_label,login_user
 
     # ---- get entries ------
-    user=username.entry.get()
+    login_user = username.entry.get()
     passcode=password.entry.get()
     refresh_members()
 
     # ----- authenticate ------
     found=False
     for i,member in enumerate(members):
-       if user == member[0] and passcode == member[1]:
+        
+       if login_user == member[0] and passcode == member[1]:
            win.deiconify()
            root.deiconify()
-           fav.title(f'{user} - favorite colors')
+           fav.title(f'{login_user} - favorite colors')
            fav.deiconify()
            main.withdraw()
            auth_index=i
@@ -370,9 +391,11 @@ def create_root():
     labels=[label,]
     selected_label=label
     root_plus=CustomButton(root,'+',120,root.winfo_height()-30,(0,2),4,'red','add_fav')
-    screen_btn=CustomButton(root,'screen',root.winfo_width()-70,high(),(0,0),6,'gray','get_screan_shot')
+    screen_btn=CustomButton(root,'jpg',root.winfo_width()-70,high(),(0,0),6,'gray','get_screan_shot')
+    screen_btn_cmyk=CustomButton(root,'pdf',root.winfo_width()-140,high(),(1,1),6,'gray','get_screan_shot')
     configer(root_plus,12)
     configer(screen_btn,12)
+    configer(screen_btn_cmyk,12)
      
 # ---- rewatch colors ----- 
 def rewatch_colors():
@@ -531,7 +554,7 @@ def show_color(event):
   
 # ----- create fav,root,win windows again --------
 def destroyed(event):
-    global top_level_destroyed,main
+    global top_level_destroyed,main,login_user
 
     if event.widget ==  fav or event.widget == win or event.widget ==  root:
         if top_level_destroyed < 2 :
@@ -545,6 +568,7 @@ def destroyed(event):
             clear()
             top_level_destroyed=0
             destroy_set()
+            login_user=None
             
 # ------ save labels --------
 def save_labels():
